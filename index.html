@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Covra — AI Copilot for Insurance Brokers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@300;400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0e0e0e;
+    --paper: #f5f2eb;
+    --cream: #ede9df;
+    --accent: #c8502a;
+    --accent-light: #e8896a;
+    --muted: #7a7469;
+    --border: rgba(14,14,14,0.12);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Playfair Display', serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 4rem;
+    background: rgba(245,242,235,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .nav-logo span {
+    color: var(--accent);
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+
+  .nav-cta {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 0.65rem 1.4rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .nav-cta:hover { background: var(--accent); }
+
+  /* LANG SWITCHER */
+  .lang-switcher {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-right: 1rem;
+  }
+
+  .lang-btn {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    padding: 0.45rem 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .lang-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .lang-btn:not(.active):hover {
+    background: var(--cream);
+    color: var(--ink);
+  }
+
+  .lang-divider {
+    width: 1px;
+    height: 100%;
+    background: var(--border);
+    align-self: stretch;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+  }
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding-top: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6rem 4rem 6rem 4rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  .hero-headline {
+    font-family: var(--serif);
+    font-size: clamp(2.8rem, 4.5vw, 5rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin-bottom: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.4s forwards;
+  }
+
+  .hero-headline em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--muted);
+    max-width: 440px;
+    margin-bottom: 3rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.6s forwards;
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.8s forwards;
+  }
+
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .btn-primary:hover { background: #a83e1c; transform: translateY(-1px); }
+
+  .btn-ghost {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--ink);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+
+  .hero-right {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ABSTRACT GEOMETRIC BACKGROUND */
+  .hero-bg-shape {
+    position: absolute;
+    inset: 0;
+    background: var(--cream);
+    clip-path: polygon(8% 0%, 100% 0%, 100% 100%, 0% 100%);
+  }
+
+  .hero-card {
+    position: relative;
+    z-index: 2;
+    width: 380px;
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 2rem;
+    box-shadow: 24px 24px 0px var(--cream), 25px 25px 0px var(--border);
+    opacity: 0;
+    animation: fadeIn 1s 1s forwards;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .card-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .card-prompt {
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    padding: 0.8rem;
+    background: var(--cream);
+    border-left: 2px solid var(--accent);
+  }
+
+  .card-response {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+  }
+
+  .card-response strong {
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .card-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #2e7d32;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* TICKER */
+  .ticker {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.75rem 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ticker-inner {
+    display: inline-flex;
+    animation: ticker 30s linear infinite;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    gap: 3rem;
+  }
+
+  .ticker-item { color: var(--muted); }
+  .ticker-item span { color: var(--accent-light); margin-right: 0.5rem; }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* SECTION BASE */
+  section {
+    padding: 7rem 4rem;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 3.5vw, 3.2rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    max-width: 600px;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-title em { font-style: italic; }
+
+  /* PROBLEM SECTION */
+  .problem {
+    background: var(--cream);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6rem;
+    align-items: center;
+  }
+
+  .problem-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .stat-box {
+    background: var(--paper);
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s;
+  }
+  .stat-box:hover { background: #fff; }
+
+  .stat-number {
+    font-family: var(--serif);
+    font-size: 3rem;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-number span { color: var(--accent); }
+
+  .stat-label {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .problem-desc {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+
+  /* FEATURES */
+  .features {
+    background: var(--paper);
+  }
+
+  .features-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 4rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+
+  .feature-item {
+    padding: 2.5rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    transition: background 0.25s;
+    cursor: default;
+  }
+
+  .feature-item:hover {
+    background: var(--cream);
+  }
+
+  .feature-item:nth-child(3n) { border-right: none; }
+  .feature-item:nth-child(n+4) { border-bottom: none; }
+
+  .feature-num {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+
+  .feature-icon {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-name {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.75rem;
+  }
+
+  .feature-desc {
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: var(--muted);
+  }
+
+  /* HOW IT WORKS */
+  .how {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .how .section-label { color: var(--accent-light); }
+
+  .how .section-title { color: var(--paper); }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 4rem;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .step {
+    padding: 2.5rem 2rem;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+  }
+
+  .step:last-child { border-right: none; }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 3rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.08);
+    line-height: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .step-title {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--paper);
+    margin-bottom: 0.75rem;
+  }
+
+  .step-desc {
+    font-size: 0.83rem;
+    line-height: 1.7;
+    color: rgba(245,242,235,0.5);
+  }
+
+  .step-arrow {
+    position: absolute;
+    top: 2.5rem;
+    right: -0.75rem;
+    width: 1.5rem;
+    height: 1px;
+    background: var(--accent);
+    z-index: 1;
+  }
+
+  .step-arrow::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: -3px;
+    width: 0;
+    height: 0;
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    border-left: 5px solid var(--accent);
+  }
+
+  .step:last-child .step-arrow { display: none; }
+
+  /* TESTIMONIAL */
+  .testimonial {
+    background: var(--cream);
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .testimonial-left {
+    padding: 7rem 4rem;
+    border-right: 1px solid var(--border);
+  }
+
+  .quote-mark {
+    font-family: var(--serif);
+    font-size: 8rem;
+    line-height: 0.5;
+    color: var(--accent);
+    opacity: 0.3;
+    margin-bottom: 1rem;
+  }
+
+  .quote-text {
+    font-family: var(--serif);
+    font-size: clamp(1.2rem, 2vw, 1.6rem);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    margin-bottom: 2rem;
+    font-style: italic;
+  }
+
+  .quote-author {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .testimonial-right {
+    padding: 7rem 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .metric-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+  }
+
+  .metric {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .metric:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .metric-value {
+    font-family: var(--serif);
+    font-size: 2.8rem;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .metric-label {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* CTA */
+  .cta-section {
+    background: var(--paper);
+    text-align: center;
+    padding: 8rem 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(200,80,42,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cta-section .section-label {
+    justify-content: center;
+    display: block;
+    margin-bottom: 1.5rem;
+  }
+
+  .cta-section .section-title {
+    margin: 0 auto 1.5rem;
+    text-align: center;
+    max-width: 700px;
+  }
+
+  .cta-desc {
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--muted);
+    max-width: 480px;
+    margin: 0 auto 3rem;
+  }
+
+  .cta-form {
+    display: flex;
+    gap: 0;
+    max-width: 460px;
+    margin: 0 auto 1rem;
+    border: 1px solid var(--border);
+  }
+
+  .cta-honeypot {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .cta-input {
+    flex: 1;
+    padding: 0.9rem 1.2rem;
+    border: none;
+    background: #fff;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    color: var(--ink);
+    outline: none;
+  }
+
+  .cta-input::placeholder { color: var(--muted); }
+
+  .cta-submit {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 0.9rem 1.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .cta-submit:hover { background: var(--accent); }
+
+  .cta-note {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .cta-form-message {
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    max-width: 460px;
+    margin: 0.75rem auto 0;
+    min-height: 1.2em;
+    color: #b71c1c;
+  }
+
+  .cta-submit:disabled {
+    opacity: 0.65;
+    cursor: wait;
+    pointer-events: none;
+  }
+
+  /* FOOTER */
+  footer {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 3rem 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-logo {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    letter-spacing: -0.02em;
+  }
+
+  .footer-logo span { color: var(--accent); }
+
+  .footer-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .footer-links a {
+    color: rgba(245,242,235,0.4);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--paper); }
+
+  .footer-right {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(245,242,235,0.3);
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    nav { padding: 1.2rem 2rem; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; min-height: auto; }
+    .hero-left { padding: 5rem 2rem 3rem; }
+    .hero-right { display: none; }
+    section { padding: 4rem 2rem; }
+    .problem, .testimonial { grid-template-columns: 1fr; }
+    .features-grid { grid-template-columns: 1fr; }
+    .feature-item { border-right: none; }
+    .steps { grid-template-columns: 1fr 1fr; }
+    .step-arrow { display: none; }
+    footer { flex-direction: column; gap: 1.5rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">Covra<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#features" data-i18n="nav_product">Product</a></li>
+    <li><a href="#how" data-i18n="nav_how">How it works</a></li>
+    <li><a href="#about" data-i18n="nav_about">About</a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="lang-switcher">
+      <button class="lang-btn active" onclick="setLang('en')" id="btn-en">EN</button>
+      <div class="lang-divider"></div>
+      <button class="lang-btn" onclick="setLang('it')" id="btn-it">IT</button>
+    </div>
+    <button type="button" class="nav-cta" data-i18n="nav_cta">Request access</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <p class="hero-eyebrow" data-i18n="hero_eyebrow">AI Copilot for Insurance Brokers</p>
+    <h1 class="hero-headline" data-i18n-html="hero_headline">
+      Your smartest<br><em>colleague</em><br>never sleeps.
+    </h1>
+    <p class="hero-sub" data-i18n="hero_sub">
+      Covra automates the paperwork, submissions, and research that slow down independent brokers — so you can focus on clients, not documents.
+    </p>
+    <div class="hero-actions">
+      <button type="button" class="btn-primary" data-i18n="hero_cta1">Request early access</button>
+      <a href="#how" class="btn-ghost" data-i18n="hero_cta2">See how it works</a>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-bg-shape"></div>
+    <div class="hero-card">
+      <div class="card-header">
+        <span class="card-title">Covra Assistant</span>
+        <span class="card-badge">● Live</span>
+      </div>
+      <div class="card-prompt">
+        "Prepara una submission per un cliente PMI nel settore edile — RC Generale, fatturato 2.4M€, 12 dipendenti."
+      </div>
+      <div class="card-response">
+        Submission pronta per <strong>4 compagnie</strong>. Ho incluso: profilo di rischio strutturato, storico sinistri vuoto, codice ATECO 41.20, e note su requisiti CAM per appalti pubblici.<br><br>
+        Stima premi: <strong>€3.200 – €4.800/anno</strong> per RC Generale. Vuoi che aggiunga RCO?
+      </div>
+      <div class="card-meta">
+        <div class="card-dot"></div>
+        Elaborato in 8 secondi · 3 polizze confrontate
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ticker-item"><span>→</span> Market Submissions</span>
+    <span class="ticker-item"><span>→</span> Policy Comparison</span>
+    <span class="ticker-item"><span>→</span> Client Q&A</span>
+    <span class="ticker-item"><span>→</span> Renewal Summaries</span>
+    <span class="ticker-item"><span>→</span> Risk Intake</span>
+    <span class="ticker-item"><span>→</span> Carrier Research</span>
+    <span class="ticker-item"><span>→</span> IDD Compliance</span>
+    <span class="ticker-item"><span>→</span> Document Drafting</span>
+    <span class="ticker-item"><span>→</span> Market Submissions</span>
+    <span class="ticker-item"><span>→</span> Policy Comparison</span>
+    <span class="ticker-item"><span>→</span> Client Q&A</span>
+    <span class="ticker-item"><span>→</span> Renewal Summaries</span>
+    <span class="ticker-item"><span>→</span> Risk Intake</span>
+    <span class="ticker-item"><span>→</span> Carrier Research</span>
+    <span class="ticker-item"><span>→</span> IDD Compliance</span>
+    <span class="ticker-item"><span>→</span> Document Drafting</span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="reveal">
+    <p class="section-label" data-i18n="prob_label">The problem</p>
+    <h2 class="section-title" data-i18n-html="prob_title">Brokers are drowning in <em>busywork.</em></h2>
+    <p class="problem-desc" data-i18n="prob_desc1">
+      Independent brokers and MGAs spend the majority of their week on tasks that require expertise but not judgment — formatting submissions, chasing documents, comparing policy terms, writing client updates.
+    </p>
+    <p class="problem-desc" data-i18n="prob_desc2">
+      The software built for them is 15 years old. The processes haven't changed in 30. Covra changes that.
+    </p>
+  </div>
+  <div class="problem-stats reveal">
+    <div class="stat-box">
+      <div class="stat-number">60<span>%</span></div>
+      <div class="stat-label" data-i18n="stat1">of a broker's week spent on admin and documentation</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">4<span>h</span></div>
+      <div class="stat-label" data-i18n="stat2">average time to prepare a single market submission</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">€1<span>.2T</span></div>
+      <div class="stat-label" data-i18n="stat3">EU insurance premium market — still largely manual</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-number">0</div>
+      <div class="stat-label" data-i18n="stat4">dominant AI tools built specifically for EU brokers</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="features-header reveal">
+    <div>
+      <p class="section-label" data-i18n="feat_label">What Covra does</p>
+      <h2 class="section-title" data-i18n-html="feat_title">Built for the <em>full</em> broker workflow.</h2>
+    </div>
+  </div>
+  <div class="features-grid">
+    <div class="feature-item reveal">
+      <div class="feature-num">01</div>
+      <div class="feature-icon">📄</div>
+      <h3 class="feature-name" data-i18n="f1_name">Submission Drafting</h3>
+      <p class="feature-desc" data-i18n="f1_desc">Generate structured, carrier-ready market submissions from client intake data in seconds. Formatted for Italian and European carriers.</p>
+    </div>
+    <div class="feature-item reveal">
+      <div class="feature-num">02</div>
+      <div class="feature-icon">🔍</div>
+      <h3 class="feature-name" data-i18n="f2_name">Policy Intelligence</h3>
+      <p class="feature-desc" data-i18n="f2_desc">Ask questions about any policy wording in plain language. Compare coverage terms across carriers instantly.</p>
+    </div>
+    <div class="feature-item reveal">
+      <div class="feature-num">03</div>
+      <div class="feature-icon">🔄</div>
+      <h3 class="feature-name" data-i18n="f3_name">Renewal Automation</h3>
+      <p class="feature-desc" data-i18n="f3_desc">Track upcoming renewals, summarize changes from prior year, and draft client-ready update letters automatically.</p>
+    </div>
+    <div class="feature-item reveal">
+      <div class="feature-num">04</div>
+      <div class="feature-icon">📥</div>
+      <h3 class="feature-name" data-i18n="f4_name">Risk Intake</h3>
+      <p class="feature-desc" data-i18n="f4_desc">Extract structured risk data from unstructured client inputs — emails, scanned documents, conversations — and populate your workflow.</p>
+    </div>
+    <div class="feature-item reveal">
+      <div class="feature-num">05</div>
+      <div class="feature-icon">⚖️</div>
+      <h3 class="feature-name" data-i18n="f5_name">IDD & DORA Ready</h3>
+      <p class="feature-desc" data-i18n="f5_desc">Outputs designed to meet EU Insurance Distribution Directive requirements. Audit trail built in.</p>
+    </div>
+    <div class="feature-item reveal">
+      <div class="feature-num">06</div>
+      <div class="feature-icon">🇮🇹</div>
+      <h3 class="feature-name" data-i18n="f6_name">Natively Italian</h3>
+      <p class="feature-desc" data-i18n="f6_desc">Built for the Italian market first — IVASS compliance, Italian carriers, Italian policy language. Not a US tool translated.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="reveal">
+    <p class="section-label" data-i18n="how_label">How it works</p>
+    <h2 class="section-title" data-i18n-html="how_title" style="color: var(--paper);">From client intake to<br><em>submission ready</em> in minutes.</h2>
+  </div>
+  <div class="steps">
+    <div class="step reveal">
+      <div class="step-num">01</div>
+      <h3 class="step-title" data-i18n="step1_title">Connect your workflow</h3>
+      <p class="step-desc" data-i18n="step1_desc">Integrates with your existing BMS or works standalone. No migration required.</p>
+      <div class="step-arrow"></div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">02</div>
+      <h3 class="step-title" data-i18n="step2_title">Describe the risk</h3>
+      <p class="step-desc" data-i18n="step2_desc">In plain Italian or English. Covra extracts structure from how you naturally speak about a client.</p>
+      <div class="step-arrow"></div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">03</div>
+      <h3 class="step-title" data-i18n="step3_title">Covra drafts</h3>
+      <p class="step-desc" data-i18n="step3_desc">Submission documents, comparison tables, client summaries — all formatted, all auditable.</p>
+      <div class="step-arrow"></div>
+    </div>
+    <div class="step reveal">
+      <div class="step-num">04</div>
+      <h3 class="step-title" data-i18n="step4_title">You review & send</h3>
+      <p class="step-desc" data-i18n="step4_desc">You stay in control. Covra is your copilot, not your autopilot. Every output is yours to review.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIAL -->
+<section class="testimonial">
+  <div class="testimonial-left reveal">
+    <div class="quote-mark">"</div>
+    <p class="quote-text" data-i18n="quote_text">
+      Ogni settimana perdo almeno due giorni in pratiche che non richiedono la mia competenza — solo il mio tempo. Uno strumento come questo cambierebbe tutto.
+    </p>
+    <p class="quote-author" data-i18n="quote_author">— Broker indipendente, Milano · 14 anni di esperienza</p>
+  </div>
+  <div class="testimonial-right reveal">
+    <div class="metric-row">
+      <div class="metric">
+        <div class="metric-value">–70%</div>
+        <div class="metric-label" data-i18n="m1">Reduction in time spent on submission drafting in early pilots</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">8s</div>
+        <div class="metric-label" data-i18n="m2">Average time to generate a structured market submission</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">€0</div>
+        <div class="metric-label" data-i18n="m3">Cost to join the early access programme</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="about">
+  <div class="cta-bg"></div>
+  <p class="section-label" data-i18n="cta_label">Early access</p>
+  <h2 class="section-title" data-i18n-html="cta_title">We're onboarding the<br>first <em>50 brokers</em> in Italy.</h2>
+  <p class="cta-desc" data-i18n="cta_desc">Join the waitlist and get free access for 6 months. We're looking for brokers who want to shape the product from day one.</p>
+  <form class="cta-form" id="waitlist-form" action="https://formspree.io/f/mzdyljvy" method="post" novalidate>
+    <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" class="cta-honeypot">
+    <input type="email" name="email" class="cta-input" id="cta-email" placeholder="Your professional email" required autocomplete="email" inputmode="email">
+    <button type="submit" class="cta-submit" data-i18n="cta_btn">Request access</button>
+  </form>
+  <p class="cta-form-message" id="cta-form-message" role="status" aria-live="polite"></p>
+  <p class="cta-note" data-i18n="cta_note">No spam. No commitment. Cancel anytime.</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Covra<span>.</span></div>
+  <ul class="footer-links">
+    <li><a href="#" data-i18n="footer_privacy">Privacy</a></li>
+    <li><a href="#" data-i18n="footer_terms">Terms</a></li>
+    <li><a href="#" data-i18n="footer_contact">Contact</a></li>
+    <li><a href="#">IVASS</a></li>
+  </ul>
+  <div class="footer-right">© 2026 Covra · Milano, Italia</div>
+</footer>
+
+<script>
+  // ── TRANSLATIONS ────────────────────────────────────────────────
+  const t = {
+    en: {
+      nav_product: 'Product',
+      nav_how: 'How it works',
+      nav_about: 'About',
+      nav_cta: 'Request access',
+      hero_eyebrow: 'AI Copilot for Insurance Brokers',
+      hero_headline: 'Your smartest<br><em>colleague</em><br>never sleeps.',
+      hero_sub: 'Covra automates the paperwork, submissions, and research that slow down independent brokers — so you can focus on clients, not documents.',
+      hero_cta1: 'Request early access',
+      hero_cta2: 'See how it works',
+      prob_label: 'The problem',
+      prob_title: 'Brokers are drowning in <em>busywork.</em>',
+      prob_desc1: 'Independent brokers and MGAs spend the majority of their week on tasks that require expertise but not judgment — formatting submissions, chasing documents, comparing policy terms, writing client updates.',
+      prob_desc2: 'The software built for them is 15 years old. The processes haven\'t changed in 30. Covra changes that.',
+      stat1: 'of a broker\'s week spent on admin and documentation',
+      stat2: 'average time to prepare a single market submission',
+      stat3: 'EU insurance premium market — still largely manual',
+      stat4: 'dominant AI tools built specifically for EU brokers',
+      feat_label: 'What Covra does',
+      feat_title: 'Built for the <em>full</em> broker workflow.',
+      f1_name: 'Submission Drafting',
+      f1_desc: 'Generate structured, carrier-ready market submissions from client intake data in seconds. Formatted for Italian and European carriers.',
+      f2_name: 'Policy Intelligence',
+      f2_desc: 'Ask questions about any policy wording in plain language. Compare coverage terms across carriers instantly.',
+      f3_name: 'Renewal Automation',
+      f3_desc: 'Track upcoming renewals, summarize changes from prior year, and draft client-ready update letters automatically.',
+      f4_name: 'Risk Intake',
+      f4_desc: 'Extract structured risk data from unstructured client inputs — emails, scanned documents, conversations — and populate your workflow.',
+      f5_name: 'IDD & DORA Ready',
+      f5_desc: 'Outputs designed to meet EU Insurance Distribution Directive requirements. Audit trail built in.',
+      f6_name: 'Natively Italian',
+      f6_desc: 'Built for the Italian market first — IVASS compliance, Italian carriers, Italian policy language. Not a US tool translated.',
+      how_label: 'How it works',
+      how_title: 'From client intake to<br><em>submission ready</em> in minutes.',
+      step1_title: 'Connect your workflow',
+      step1_desc: 'Integrates with your existing BMS or works standalone. No migration required.',
+      step2_title: 'Describe the risk',
+      step2_desc: 'In plain Italian or English. Covra extracts structure from how you naturally speak about a client.',
+      step3_title: 'Covra drafts',
+      step3_desc: 'Submission documents, comparison tables, client summaries — all formatted, all auditable.',
+      step4_title: 'You review & send',
+      step4_desc: 'You stay in control. Covra is your copilot, not your autopilot. Every output is yours to review.',
+      quote_text: 'Every week I lose at least two days on paperwork that doesn\'t require my expertise — just my time. A tool like this would change everything.',
+      quote_author: '— Independent broker, Milan · 14 years of experience',
+      m1: 'Reduction in time spent on submission drafting in early pilots',
+      m2: 'Average time to generate a structured market submission',
+      m3: 'Cost to join the early access programme',
+      cta_label: 'Early access',
+      cta_title: 'We\'re onboarding the<br>first <em>50 brokers</em> in Italy.',
+      cta_desc: 'Join the waitlist and get free access for 6 months. We\'re looking for brokers who want to shape the product from day one.',
+      cta_btn: 'Request access',
+      cta_placeholder: 'Your professional email',
+      cta_success: '✓ You\'re on the list. We\'ll be in touch.',
+      cta_sending: 'Sending…',
+      cta_error: 'Something went wrong. Please try again in a moment.',
+      cta_note: 'No spam. No commitment. Cancel anytime.',
+      footer_privacy: 'Privacy',
+      footer_terms: 'Terms',
+      footer_contact: 'Contact',
+    },
+    it: {
+      nav_product: 'Prodotto',
+      nav_how: 'Come funziona',
+      nav_about: 'Accesso anticipato',
+      nav_cta: 'Richiedi accesso',
+      hero_eyebrow: 'AI Copilot per broker assicurativi',
+      hero_headline: 'Il tuo collaboratore più<br>intelligente non <em>dorme</em><br>mai.',
+      hero_sub: 'Covra automatizza burocrazia, submission e ricerca che rallentano i broker indipendenti — così puoi concentrarti sui clienti, non sui documenti.',
+      hero_cta1: 'Richiedi accesso anticipato',
+      hero_cta2: 'Come funziona',
+      prob_label: 'Il problema',
+      prob_title: 'I broker sono sommersi dal <em>lavoro operativo.</em>',
+      prob_desc1: 'I broker indipendenti e le MGA trascorrono gran parte della settimana su attività che richiedono competenza, ma non giudizio: formattare submission, rincorrere documenti, confrontare condizioni di polizza, scrivere aggiornamenti per i clienti.',
+      prob_desc2: 'Il software costruito per loro ha 15 anni. I processi non cambiano da 30. Covra cambia tutto.',
+      stat1: 'della settimana di un broker spesa in amministrazione e documentazione',
+      stat2: 'tempo medio per preparare una singola market submission',
+      stat3: 'mercato premi assicurativi UE — ancora largamente manuale',
+      stat4: 'strumenti AI costruiti specificamente per i broker europei',
+      feat_label: 'Cosa fa Covra',
+      feat_title: 'Pensato per l\'intero <em>flusso di lavoro</em> del broker.',
+      f1_name: 'Redazione submission',
+      f1_desc: 'Genera submission strutturate e pronte per le compagnie a partire dai dati del cliente in pochi secondi. Formattate per le compagnie italiane ed europee.',
+      f2_name: 'Intelligence di polizza',
+      f2_desc: 'Fai domande su qualsiasi clausola di polizza in linguaggio naturale. Confronta le coperture tra compagnie in tempo reale.',
+      f3_name: 'Automazione rinnovi',
+      f3_desc: 'Monitora i rinnovi in scadenza, sintetizza le variazioni rispetto all\'anno precedente e redigi automaticamente lettere di aggiornamento per i clienti.',
+      f4_name: 'Raccolta del rischio',
+      f4_desc: 'Estrai dati di rischio strutturati da input non strutturati — email, documenti scansionati, conversazioni — e popola il tuo flusso di lavoro.',
+      f5_name: 'Conformità a IDD e DORA',
+      f5_desc: 'Output progettati per soddisfare i requisiti della Direttiva UE sulla Distribuzione Assicurativa. Tracciabilità integrata.',
+      f6_name: 'Nativamente italiano',
+      f6_desc: 'Costruito per il mercato italiano — conformità IVASS, compagnie italiane, linguaggio contrattuale italiano. Non uno strumento americano tradotto.',
+      how_label: 'Come funziona',
+      how_title: 'Dalla raccolta del rischio alla<br><em>submission pronta</em> in pochi minuti.',
+      step1_title: 'Collegati al tuo flusso',
+      step1_desc: 'Si integra con il tuo BMS esistente o funziona autonomamente. Nessuna migrazione richiesta.',
+      step2_title: 'Descrivi il rischio',
+      step2_desc: 'In italiano o in inglese naturale. Covra estrae la struttura da come descrivi il cliente.',
+      step3_title: 'Covra redige',
+      step3_desc: 'Documenti di submission, tabelle comparative, riepiloghi per il cliente — tutto formattato, tutto verificabile.',
+      step4_title: 'Tu rivedi e invii',
+      step4_desc: 'Rimani in controllo. Covra è il tuo copilota, non il tuo autopilota. Ogni output è tuo da rivedere.',
+      quote_text: 'Ogni settimana perdo almeno due giorni in pratiche che non richiedono la mia competenza — solo il mio tempo. Uno strumento come questo cambierebbe tutto.',
+      quote_author: '— Broker indipendente, Milano · 14 anni di esperienza',
+      m1: 'Riduzione del tempo dedicato alla redazione delle submission nei primi progetti pilota',
+      m2: 'Tempo medio per generare una submission strutturata',
+      m3: 'Costo per aderire al programma di accesso anticipato',
+      cta_label: 'Accesso anticipato',
+      cta_title: 'Stiamo accogliendo i<br>primi <em>50 broker</em> in Italia.',
+      cta_desc: 'Unisciti alla lista d\'attesa e ottieni 6 mesi di accesso gratuito. Cerchiamo broker che vogliono contribuire a definire il prodotto fin dal primo giorno.',
+      cta_btn: 'Richiedi accesso',
+      cta_placeholder: 'La tua email professionale',
+      cta_success: '✓ Sei in lista. Ti contatteremo presto.',
+      cta_sending: 'Invio in corso…',
+      cta_error: 'Qualcosa è andato storto. Riprova tra un momento.',
+      cta_note: 'Nessuno spam. Nessun impegno. Puoi disiscriverti in qualsiasi momento.',
+      footer_privacy: 'Privacy',
+      footer_terms: 'Termini',
+      footer_contact: 'Contatti',
+    }
+  };
+
+  // ── LANGUAGE ENGINE ─────────────────────────────────────────────
+  let currentLang = 'en';
+
+  function setLang(lang) {
+    currentLang = lang;
+    const dict = t[lang];
+
+    // Toggle button states
+    document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+    document.getElementById('btn-it').classList.toggle('active', lang === 'it');
+
+    // Update html lang attribute
+    document.documentElement.lang = lang;
+
+    // Plain text nodes
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (dict[key] !== undefined) el.textContent = dict[key];
+    });
+
+    // HTML nodes (contain <em>, <br> etc)
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const key = el.getAttribute('data-i18n-html');
+      if (dict[key] !== undefined) el.innerHTML = dict[key];
+    });
+
+    // Input placeholder (keep success copy if already signed up this session)
+    const emailInput = document.getElementById('cta-email');
+    if (emailInput) {
+      if (emailInput.dataset.waitlistSuccess === '1' && dict.cta_success) {
+        emailInput.placeholder = dict.cta_success;
+      } else if (dict.cta_placeholder) {
+        emailInput.placeholder = dict.cta_placeholder;
+      }
+    }
+
+    const ctaBtn = document.querySelector('.cta-submit');
+    if (ctaBtn) {
+      if (ctaBtn.dataset.success === '1') {
+        ctaBtn.textContent = lang === 'it' ? 'Fatto ✓' : 'Done ✓';
+      } else if (!ctaBtn.disabled) {
+        ctaBtn.textContent = dict.cta_btn;
+      }
+    }
+  }
+
+  // ── SCROLL REVEAL ───────────────────────────────────────────────
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+
+  // ── LEAD CAPTURE — Formspree AJAX (static-site friendly) ────────
+  const LEADS_FORM_ENDPOINT = 'https://formspree.io/f/mzdyljvy';
+  const LEADS_MAILTO = ''; // e.g. 'you@company.com' — used only if endpoint is empty; opens visitor mail client
+
+  function showCtaMessage(text, isError) {
+    const el = document.getElementById('cta-form-message');
+    if (!el) return;
+    el.textContent = text || '';
+    el.style.color = isError ? '#b71c1c' : '';
+  }
+
+  function markCtaSuccess(input, btn) {
+    input.value = '';
+    input.dataset.waitlistSuccess = '1';
+    input.placeholder = t[currentLang].cta_success;
+    btn.textContent = currentLang === 'it' ? 'Fatto ✓' : 'Done ✓';
+    btn.style.background = '#2e7d32';
+    btn.disabled = true;
+    btn.dataset.success = '1';
+    showCtaMessage('', false);
+  }
+
+  function openWaitlist() {
+    document.getElementById('about').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => document.getElementById('cta-email')?.focus(), 450);
+  }
+
+  document.querySelector('.nav-cta')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openWaitlist();
+  });
+  document.querySelector('.hero-actions .btn-primary')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openWaitlist();
+  });
+
+  document.getElementById('waitlist-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const input = document.getElementById('cta-email');
+    const btn = form.querySelector('.cta-submit');
+    const email = (input.value || '').trim();
+    const honeypot = form.querySelector('input[name="_gotcha"]')?.value;
+
+    if (!email || !email.includes('@')) {
+      input.reportValidity();
+      return;
+    }
+    if (honeypot) {
+      markCtaSuccess(input, btn);
+      return;
+    }
+
+    showCtaMessage('', false);
+    const prevLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = t[currentLang].cta_sending;
+
+    try {
+      const formEndpoint = (LEADS_FORM_ENDPOINT || '').trim();
+      const mailTo = (LEADS_MAILTO || '').trim();
+
+      if (formEndpoint) {
+        const res = await fetch(formEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            _replyto: email,
+            _subject: 'Covra — early access request',
+            lang: currentLang,
+            page: typeof location !== 'undefined' ? location.href : '',
+          }),
+        });
+        if (!res.ok) throw new Error('Formspree ' + res.status);
+        markCtaSuccess(input, btn);
+        return;
+      }
+
+      if (mailTo && mailTo.includes('@')) {
+        const subj = encodeURIComponent('Covra — early access');
+        const body = encodeURIComponent(
+          'Please add me to the Covra early access waitlist.\n\nEmail: ' + email + '\nLanguage: ' + currentLang
+        );
+        window.location.href = 'mailto:' + mailTo + '?subject=' + subj + '&body=' + body;
+        markCtaSuccess(input, btn);
+        return;
+      }
+
+      console.warn('[Covra] Lead not saved — set LEADS_FORM_ENDPOINT (Formspree) or LEADS_MAILTO in index.html:', email);
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+      showCtaMessage(t[currentLang].cta_error, true);
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+      showCtaMessage(t[currentLang].cta_error, true);
+    }
+  });
+
+  // Init with English
+  setLang('en');
+</script>
+
+</body>
+</html>
